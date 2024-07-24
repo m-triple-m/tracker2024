@@ -1,11 +1,29 @@
 import React, { useEffect, useState } from 'react'
 import { collection, deleteDoc, doc, getDocs, getFirestore, updateDoc } from 'firebase/firestore'
-import { StyleSheet, Text, View } from 'react-native'
-import { ActivityIndicator, Button, Checkbox, FAB, IconButton, SegmentedButtons } from 'react-native-paper'
+import { FlatList, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, Button, Card, Checkbox, FAB, IconButton, SegmentedButtons, Text } from 'react-native-paper'
 import { initializeApp } from 'firebase/app'
 import AddExpense from './AddExpense'
 
-const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const formattedDateTime = (fbDate) => {
+  const date = fbDate.toDate();
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getHours()}:${date.getMinutes()} ${date.getHours() > 12 ? 'PM' : 'AM'}`
+}
+
+const ExpenseCard = ({ id, title, isCompleted, amount, createdAt }) => {
+  return <Card key={id}>
+    <Card.Content>
+      <Checkbox status={isCompleted ? 'checked' : 'unchecked'} onPress={() => completeExpense(id, isCompleted)} />
+      <Text style={styles.itemText}>{title} (₹{amount}) - {formattedDateTime(createdAt)} </Text>
+    </Card.Content>
+    <Card.Actions>
+      {/* <Button>Cancel</Button> */}
+      <Button onPress={() => deleteExpense(id)} icon="delete">Delete</Button>
+    </Card.Actions>
+  </Card>
+}
 
 const ListExpense = () => {
 
@@ -64,27 +82,17 @@ const ListExpense = () => {
     fetchExpenses();
   }
 
-  const formattedDateTime = (fbDate) => {
-    const date = fbDate.toDate();
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getHours()}:${date.getMinutes()} ${date.getHours() > 12 ? 'PM' : 'AM'}`
-  }
+
 
   const displayList = () => {
     if (loading) return (<ActivityIndicator animating={true} color={'#6200ee'} />)
-    if (expenseList.length === 0) return (<Text style={{ textAlign: 'center', fontSize: 30, color: '#aaa' }}>No expenses found</Text>)
-    else {
-      return expenseList.map((expense, index) => {
-        return (
-          <View key={index} style={styles.listItem}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Checkbox status={expense.isCompleted ? 'checked' : 'unchecked'} onPress={() => completeExpense(expense.id, expense.isCompleted)} />
-              <Text style={styles.itemText}>{expense.title} (₹{expense.amount}) - {formattedDateTime(expense.createdAt)} </Text>
-            </View>
-            <Button textColor='red' onPress={() => deleteExpense(expense.id)}>Delete</Button>
-          </View>
-        )
-      })
-    }
+
+    return <FlatList
+      data={expenseList}
+      renderItem={({ item, index }) => <ExpenseCard {...item} index={index} />}
+      keyExtractor={(item) => item.id}
+      ListEmptyComponent={<Text style={{ textAlign: 'center', fontSize: 30, color: '#aaa' }}>No expenses found</Text>}
+    />
   }
 
   const filterPending = () => {
@@ -107,19 +115,19 @@ const ListExpense = () => {
           {
             icon: 'format-list-bulleted',
             value: 'all',
-            label: 'All Tasks',
+            label: 'All Expense',
             onPress: () => setExpenseList(masterList)
           },
           {
-            icon: 'clock-outline',
+            icon: 'arrow-up-bold-circle',
             value: 'pending',
-            label: 'Pending',
+            label: 'Debit',
             onPress: filterPending
           },
           {
-            icon: 'check',
+            icon: 'arrow-down-bold-circle',
             value: 'completed',
-            label: 'Completed',
+            label: 'Credit',
             onPress: filterCompleted
           },
         ]}

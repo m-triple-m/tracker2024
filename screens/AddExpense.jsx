@@ -17,6 +17,7 @@ const AddExpense = ({ db, fetchExpenses, modalVisible, setModalVisible }) => {
       const docRef = await addDoc(collection(db, "expenses"), {
         title: textInput,
         amount: amtInput,
+        type: 'debit',
         isCompleted: false,
         createdAt: new Date()
       });
